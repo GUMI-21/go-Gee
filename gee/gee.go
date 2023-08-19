@@ -5,6 +5,7 @@ import (
 	"net/http"
 )
 
+// HandlerFunc 这是一个简单的例子
 type HandlerFunc func(w http.ResponseWriter, r *http.Request)
 
 // Engine implement the interface of ServeHttp
