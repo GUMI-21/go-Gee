@@ -1,28 +1,29 @@
 package gee
 
 import (
-	"fmt"
 	"net/http"
 )
 
-// HandlerFunc 这是一个简单的例子
-type HandlerFunc func(w http.ResponseWriter, r *http.Request)
+// 框架入口
 
-// Engine implement the interface of ServeHttp
+// HandlerFunc defines the request handler used by gee
+type HandlerFunc func(ctx *Context)
+
 type Engine struct {
-	router map[string]HandlerFunc
+	router *Router
 }
 
+// New is the constructor of gee.Engine
 func New() *Engine {
-	return &Engine{router: make(map[string]HandlerFunc)}
+	return &Engine{
+		router: NewRouter(),
+	}
 }
 
-func (engine *Engine) addRoute(method string, pattern string, handler HandlerFunc) {
-	key := method + "-" + pattern
-	engine.router[key] = handler
+func (engine *Engine) addRoute(method string, pattern string, handlerFunc HandlerFunc) {
+	engine.router.AddRoute(method, pattern, handlerFunc)
 }
 
-// GET defined the method to add GET request
 func (engine *Engine) GET(pattern string, handler HandlerFunc) {
 	engine.addRoute("GET", pattern, handler)
 }
@@ -31,16 +32,12 @@ func (engine *Engine) POST(pattern string, handler HandlerFunc) {
 	engine.addRoute("POST", pattern, handler)
 }
 
+// Run defined the method to start a http server
 func (engine *Engine) Run(addr string) (err error) {
 	return http.ListenAndServe(addr, engine)
 }
 
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	key := req.Method + "-" + req.URL.Path
-	if handler, ok := engine.router[key]; ok {
-		handler(w, req)
-	} else {
-		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(w, "404 NOT FOUNT:%s\n", req.URL)
-	}
+	c := newContext(w, req)
+	engine.router.Handle(c)
 }
